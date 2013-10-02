@@ -1,0 +1,85 @@
+<project name="TuningKnobProj" default="dist" basedir=".">
+    <description>Tuning knob search code</description>
+    <!-- set global properties for this build -->
+    <property name="src"   location="src"/>
+    <property name="build" location="build"/>
+    <property name="dist"  location="dist"/>
+    <property name="tuple-dir"  location="tuple"/>
+    <property name="JavaPlot-dir"  location="JavaPlot-0.4.0"/>
+    <property name="POI-dir"  location="poi-3.2-FINAL"/>
+
+    <path id="compile.classpath">
+        <pathelement location="${JavaPlot-dir}/dist/JavaPlot.jar"/>
+        <pathelement location="${POI-dir}/build/dist/poi-3.2-FINAL.jar"/>
+        <pathelement location="${tuple-dir}/out/tuple.jar"/>
+    </path>
+
+    <path id="run.classpath">
+        <path refid="compile.classpath"/>
+        <pathelement location="${dist}/TuningKnobs.jar"/>
+    </path>
+
+    <target name="init">
+        <mkdir dir="${build}"/>
+        <mkdir dir="depcache"/>
+    </target>
+
+    <target name="build-tuple" depends="" description="">
+        <ant dir="${tuple-dir}" target="archive"/>
+    </target>
+
+    <target name="build-JavaPlot" depends="" description="">
+        <ant dir="${JavaPlot-dir}" target="jar"/>
+    </target>
+
+    <target name="build-POI" depends="" description="">
+        <ant dir="${POI-dir}" target="jar"/>
+    </target>
+
+    <target name="compile" depends="init"
+            description="compile tuning knob source">
+        <!-- <depend srcdir="${src}" destdir="${build}" cache="depcache" closure="true">
+        </depend> -->
+        <!-- <javac srcdir="${src}" destdir="${build}" classpath="${JavaPlot-dir}/dist/JavaPlot.jar" debug="true"> -->
+        <javac srcdir="${src}" destdir="${build}" debug="true">
+            <classpath refid="compile.classpath"/>
+            <compilerarg value="-Xlint:deprecation"/>
+            <!-- <compilerarg value="-Xlint:unchecked"/> -->
+            <!-- <compilerarg value="-Xlint"/> -->
+        </javac>
+    </target>
+
+    <target name="compile-all" depends="init,build-tuple,build-JavaPlot,build-POI,compile"
+            description="compile tuning knob source">
+    </target>
+
+    <target name="dist" depends="compile-all" description="generate the distribution">
+        <mkdir dir="${dist}"/>
+        <jar jarfile="${dist}/TuningKnobs.jar" basedir="${build}"/>
+    </target>
+
+    <target name="tk_clean" description="clean up just our source">
+        <delete dir="${build}"/>
+        <delete dir="${dist}"/>
+        <delete dir="${depcache}"/>
+    </target>
+
+    <target name="clean" depends="tk_clean" description="clean up">
+        <ant dir="${JavaPlot-dir}" target="distclean"/>
+        <ant dir="${POI-dir}" target="clean"/>
+        <ant dir="${tuple-dir}" target="clean"/>
+    </target>
+
+    <target name="run">
+        <condition property="args" value="">
+            <not>
+                <isset property="args"/>
+            </not>
+        </condition>
+        <java classname="TuningKnobSearch" fork="yes">
+            <classpath refid="run.classpath"/>
+            <jvmarg value="-ea" />
+            <arg line="${args}"/>
+        </java>
+    </target>
+</project>

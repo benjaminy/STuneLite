@@ -1,0 +1,373 @@
+<tuning_knob_search_set name="foo">
+    <architecture name="arch_S_F" clusterName="few_mems" numberOfClusters="16" numberOfMems="1">
+    </architecture>
+
+    <architecture name="arch_S_M" clusterName="many_mems" numberOfClusters="16" numberOfMems="2">
+    </architecture>
+
+    <architecture name="arch_L_F" clusterName="few_mems" numberOfClusters="64" numberOfMems="1">
+    </architecture>
+
+    <architecture name="arch_L_M" clusterName="many_mems" numberOfClusters="64" numberOfMems="2">
+    </architecture>
+
+    <applicationTemplate name="generalMosaic">
+        <!-- Constants first to get them out of the way -->
+        <feature name="maxII">
+            <!-- Maybe this should be a sensor -->
+            <constant type="double" value="16.0"/>
+        </feature>
+        <feature name="arbitraryBigNumber">
+            <constant type="double" value="100000.0"/>
+        </feature>
+        <feature name="twoPointZero">
+            <constant type="double" value="2.0"/>
+        </feature>
+        <feature name="zero">
+            <constant type="double" value="0.0"/>
+        </feature>
+        <feature name="one">
+            <constant type="double" value="1.0"/>
+        </feature>
+        <feature name="cTrue">
+            <constant type="Boolean" value="true"/>
+        </feature>
+        <!-- <feature name="cFalse">
+            <constant type="Boolean" value="false"/>
+        </feature> -->
+
+        <!-- sensors next, because they don't depend on anything -->
+        <feature name="iters">
+            <sensor key="fsimIterations"/>
+        </feature>
+        <feature name="II">
+            <sensor key="InitiationInterval"/>
+        </feature>
+        <feature name="recII">
+            <sensor key="RecurenceInitiationInterval"/>
+        </feature>
+        <feature name="resII">
+            <sensor key="ResourceInitiationInterval"/>
+        </feature>
+        <feature name="grpII">
+            <sensor key="GroupInitiationInterval"/>
+        </feature>
+        <feature name="schedII">
+            <sensor key="ScheduledInitiationInterval"/>
+        </feature>
+        <feature name="unroutedNets">
+            <sensor key="unrouted_nets"/>
+        </feature>
+        <feature name="preSprOpCount">
+            <sensor key="preSprDfgOpCount"/>
+        </feature>
+        <feature name="preSprTotalInputs">
+            <sensor key="preSprDfgOpInputCount"/>
+        </feature>
+        <feature name="preSprTotalOutputs">
+            <sensor key="preSprDfgOpOutputCount"/>
+        </feature>
+        <feature name="requiredArrays">
+            <sensor key="preSprArrayCount"/>
+        </feature>
+        <feature name="availableArrays">
+            <sensor key="arrays_available"/>
+        </feature>
+        <feature name="requiredStreamIns">
+            <sensor key="preSprStreamInCount"/>
+        </feature>
+        <feature name="availableStreamIns">
+            <sensor key="streamins_available"/>
+        </feature>
+        <feature name="requiredStreamOuts">
+            <sensor key="preSprStreamOutCount"/>
+        </feature>
+        <feature name="availableStreamOuts">
+            <sensor key="streamins_available"/>
+        </feature>
+        <!-- pseudo-sensors -->
+        <feature name="invII">
+            <algebraic op="divide" inL="maxII" inR="II"/>
+        </feature>
+        <feature name="invIIMin">
+            <aggregate op="min" feature="invII" filter="cTrue"/>
+        </feature>
+        <feature name="invIIDefault">
+            <default type="double" main="invII" ifNotAvail="invIIMin"/>
+        </feature>
+        <feature name="invIters">
+            <algebraic op="divide" inL="arbitraryBigNumber" inR="iters"/>
+        </feature>
+        <feature name="invItersMin">
+            <aggregate op="min" feature="invIters" filter="cTrue"/>
+        </feature>
+        <feature name="invItersDefault">
+            <default type="double" main="invIters" ifNotAvail="invItersMin"/>
+        </feature>
+
+
+
+        <feature name="preSprAvgFanout">
+            <algebraic op="divide" inL="preSprTotalInputs" inR="preSprTotalOutputs"/>
+        </feature>
+        <feature name="preSprDfgSize">
+            <algebraic op="multiply" inL="preSprOpCount" inR="preSprAvgFanout"/>
+        </feature>
+        <!-- <feature name="preSprDfgSizeScaled">
+            <algebraic op="multiply" inL="preSprDfgSize" inR="dfgSizeScaleFactor"/>
+        </feature> -->
+
+
+        <feature name="tooManyArrays">
+            <algebraic op="greaterThan" inL="requiredArrays" inR="availableArrays"/>
+        </feature>
+        <feature name="tooManyStreamIns">
+            <algebraic op="greaterThan" inL="requiredStreamIns" inR="availableStreamIns"/>
+        </feature>
+        <feature name="tooManyStreamOuts">
+            <algebraic op="greaterThan" inL="requiredStreamOuts" inR="availableStreamOuts"/>
+        </feature>
+
+        <feature name="tooManyStateful1">
+            <algebraic op="orGameFalseBias" inL="tooManyArrays" inR="tooManyStreamIns"/>
+        </feature>
+        <feature name="tooManyStateful">
+            <algebraic op="orGameFalseBias" inL="tooManyStateful1" inR="tooManyStreamOuts"/>
+        </feature>
+        <feature name="tooManyStatefulFailure">
+            <failure feature="tooManyStateful" key="TooManyStateful"/>
+        </feature>
+
+        <feature name="recIITooHigh">
+            <algebraic op="greaterThan" inL="recII" inR="maxII"/>
+        </feature>
+        <feature name="resIITooHigh">
+            <algebraic op="greaterThan" inL="resII" inR="maxII"/>
+        </feature>
+        <feature name="grpIITooHigh">
+            <algebraic op="greaterThan" inL="grpII" inR="maxII"/>
+        </feature>
+        <feature name="schedIITooHigh">
+            <algebraic op="greaterThan" inL="schedII" inR="maxII"/>
+        </feature>
+
+        <feature name="maxII1">
+            <algebraic op="orGameFalseBias" inL="recIITooHigh" inR="resIITooHigh"/>
+        </feature>
+        <feature name="maxII2">
+            <algebraic op="orGameFalseBias" inL="maxII1" inR="grpIITooHigh"/>
+        </feature>
+        <feature name="maxII3">
+            <algebraic op="orGameFalseBias" inL="maxII2" inR="schedIITooHigh"/>
+        </feature>
+
+        <feature name="maxIIFailure">
+            <failure feature="maxII3" key="ExceededMaxII"/>
+        </feature>
+
+        <!-- <feature name="schedRunTime">
+            <sensor key="schedTime"/>
+        </feature>
+        <feature name="placerRunTime">
+            <sensor key="placeTime"/>
+        </feature>
+        <feature name="routerRunTime">
+            <sensor key="routeTime"/>
+        </feature>
+
+        <feature name="placerRouterRunTime">
+            <algebraic op="add" inL="placerRunTime" inR="routerRunTime"/>
+        </feature>
+        <feature name="sprRunTime">
+            <algebraic op="add" inL="placerRouterRunTime" inR="schedRunTime"/>
+        </feature> -->
+
+        <!-- WARNING: "performanceTheRealOne" should really be "performance". I just changed it
+          -  for some experiments.  Change it back! -->
+        <feature name="performanceTheRealOne">
+            <algebraic op="multiply" inL="invIters" inR="invII"/>
+        </feature>
+        <feature name="performance">
+            <algebraic op="multiply" inL="invItersDefault" inR="invIIDefault"/>
+        </feature>
+        <feature name="rawBestPerf">
+            <aggregate op="max" feature="performance" filter="success"/>
+        </feature>
+
+        <feature name="dispersionMby">
+            <dispersion feature="performance" filter="cTrue"/>
+        </feature>
+        <feature name="dispersion">
+            <default type="double" main="dispersionMby" ifNotAvail="one"/>
+        </feature>
+
+        <feature name="confidence">
+            <avgConfidenceInterval feature="performance" filter="cTrue"/>
+        </feature>
+        <feature name="preBestBonusMby">
+            <algebraic op="multiply" inL="confidence" inR="dispersion"/>
+        </feature>
+        <feature name="preBestBonus">
+            <default type="double" main="preBestBonusMby" ifNotAvail="zero"/>
+        </feature>
+        <feature name="successCount">
+            <aggregate op="sum" feature="one" filter="success"/>
+        </feature>
+        <feature name="allTestedCount">
+            <aggregate op="sum" feature="one" filter="cTrue"/>
+        </feature>
+        <feature name="portionSuccessful">
+            <algebraic op="divide" inL="successCount" inR="allTestedCount"/>
+        </feature>
+        <feature name="bestBonus">
+            <algebraic op="multiply" inL="preBestBonus" inR="portionSuccessful"/>
+        </feature>
+
+        <feature name="perfWatermark">
+            <algebraic op="add" inL="rawBestPerf" inR="bestBonus"/>
+        </feature>
+
+        <feature name="betterThanBest">
+            <algebraic op="greaterThan" inL="performance" inR="perfWatermark"/>
+        </feature>
+<!--        <feature name="betterThanBestDefaultWorst">
+            <algebraic op="greaterThan" inL="performanceDefaultWorst" inR="perfWatermark"/>
+        </feature>
+-->
+        <feature name="congestedNetsLimit">
+            <constant type="double" value="0.5"/>
+        </feature>
+        <feature name="congestedNetsOverLimit">
+            <algebraic op="greaterThan" inL="unroutedNets" inR="congestedNetsLimit"/>
+        </feature>
+        <feature name="congestionFailure">
+            <failure feature="congestedNetsOverLimit" key="RouterCongestion"/>
+        </feature>
+
+        <!-- SSF = scaledSmallestFail = 0.9 * SF    LS = largestSuccess -->
+        <!-- watermark = allFail ? (SSF) : (SSF > LS ? SSF : (SF > LS ? LS : (SF + LS) / 2.0)) -->
+
+
+        <feature name="smallestTooBigDfg">
+            <aggregate op="min" feature="preSprDfgSize" filter="tooBigFailures"/>
+        </feature>
+        <feature name="dfgBiggerThanSmallestTooBig">
+            <algebraic op="greaterThan" inL="preSprDfgSize" inR="smallestTooBigDfg"/>
+        </feature>
+        <feature name="overlapDfgSizeWatermark">
+            <aggregate op="meanAndDev" feature="preSprDfgSize" filter="dfgBiggerAndSuccess"/>
+        </feature>
+        <feature name="rawLargestSuccessfulDfg">
+            <aggregate op="max" feature="preSprDfgSize" filter="success"/>
+        </feature>
+        <feature name="largestSuccessfulDfg">
+            <default type="double" main="rawLargestSuccessfulDfg" ifNotAvail="zero"/>
+        </feature>
+        <feature name="smallestPlusLargestDfg">
+            <algebraic op="add" inL="smallestTooBigDfg" inR="largestSuccessfulDfg"/>
+        </feature>
+        <feature name="smallestLargestAvgDfg">
+            <algebraic op="divide" inL="smallestPlusLargestDfg" inR="twoPointZero"/>
+        </feature>
+        <feature name="dfgSizeWatermark">
+            <default type="double" main="overlapDfgSizeWatermark" ifNotAvail="smallestLargestAvgDfg"/>
+        </feature>
+
+        <feature name="dfgTooBig">
+            <algebraic op="greaterThan" inL="preSprDfgSize" inR="dfgSizeWatermark"/>
+        </feature>
+        <!-- <feature name="sprTimeLimit">
+            <constant type="double" value="36000"/>
+        </feature>
+        <feature name="sprTimeOverLimit">
+            <algebraic op="greaterThan" inL="sprRunTime" inR="sprTimeLimit"/>
+        </feature> -->
+        <feature name="sprTimedOut">
+            <failure feature="dfgTooBig" key="SPRTimedOut"/>
+        </feature>
+        <feature name="maxIterPlacer">
+            <failure feature="dfgTooBig" key="maxItersPlacer"/>
+        </feature>
+
+        <feature name="tooBigFailures">
+            <algebraic op="orGameFalseBias" inL="maxIterPlacer" inR="sprTimedOut"/>
+        </feature>
+
+        <feature name="allFailures1">
+            <algebraic op="orGameFalseBias" inL="tooBigFailures" inR="tooManyStatefulFailure"/>
+        </feature>
+        <feature name="allFailures2">
+            <algebraic op="orGameFalseBias" inL="allFailures1" inR="maxIIFailure"/>
+        </feature>
+        <feature name="allFailures">
+            <algebraic op="orGameFalseBias" inL="allFailures2" inR="congestionFailure"/>
+        </feature>
+
+        <feature name="success">
+            <algebraic op="not" in="allFailures"/>
+        </feature>
+        <feature name="dfgBiggerAndSuccess">
+            <algebraic op="and" inL="dfgBiggerThanSmallestTooBig" inR="success"/>
+        </feature>
+
+        <plotting feature="performance"/>
+        <predict feature="invII"/>
+        <predict feature="invIters"/>
+        <predict feature="preSprAvgFanout"/>
+        <objective feature="betterThanBest" failure="allFailures"/>
+    </applicationTemplate>
+
+    <applicationTemplate name="fir12">
+        <setting name="NumSamples" value="1024"/>
+        <setting name="NumCoeffs" value="1024"/>
+        <knob name="NumBanks"> <discrete min="1" max="32"/> </knob>
+        <knob name="AccessesPerB"> <discrete min="1" max="32"/> </knob>
+        <include template="generalMosaic"/>
+    </applicationTemplate>
+
+    <applicationTemplate name="dmm11">
+        <setting name="EXPM" value="1024"/>
+        <setting name="EXPN" value="1024"/>
+        <setting name="EXPP" value="1024"/>
+        <knob name="BLK1WIDTH"> <discrete min="1" max="32"/> </knob>
+        <knob name="BLK1HEIGHT"> <discrete min="1" max="32"/> </knob>
+        <include template="generalMosaic"/>
+    </applicationTemplate>
+
+    <applicationTemplate name="conv9">
+        <setting name="Height" value="1024"/>
+        <setting name="Width" value="1024"/>
+        <setting name="Kr" value="2"/>
+        <setting name="RbBankSz" value="16"/>
+        <knob name="SWIDTH"> <discrete min="16" max="64"/> </knob>
+        <knob name="PAR_OUTPUTS"> <discrete min="1" max="7"/> </knob>
+        <include template="generalMosaic"/>
+    </applicationTemplate>
+
+    <applicationTemplate name="sw5">
+        <setting name="StringLen" value="128"/>
+        <knob name="SSIZE"> <discrete min="1" max="32"/> </knob>
+        <knob name="TableShareFctr"> <discrete min="1" max="16"/> </knob>
+        <include template="generalMosaic"/>
+    </applicationTemplate>
+
+    <application name="fir12_S_F" template="fir12" architecture="arch_S_F"/>
+    <application name="fir12_S_M" template="fir12" architecture="arch_S_M"/>
+    <application name="fir12_L_F" template="fir12" architecture="arch_L_F"/>
+    <application name="fir12_L_M" template="fir12" architecture="arch_L_M"/>
+
+    <application name="dmm11_S_F" template="dmm11" architecture="arch_S_F"/>
+    <application name="dmm11_S_M" template="dmm11" architecture="arch_S_M"/>
+    <application name="dmm11_L_F" template="dmm11" architecture="arch_L_F"/>
+    <application name="dmm11_L_M" template="dmm11" architecture="arch_L_M"/>
+
+    <application name="conv9_S_F" template="conv9" architecture="arch_S_F"/>
+    <application name="conv9_S_M" template="conv9" architecture="arch_S_M"/>
+    <application name="conv9_L_F" template="conv9" architecture="arch_L_F"/>
+    <application name="conv9_L_M" template="conv9" architecture="arch_L_M"/>
+
+    <application name="sw5_S_F" template="sw5" architecture="arch_S_F"/>
+    <application name="sw5_S_M" template="sw5" architecture="arch_S_M"/>
+    <application name="sw5_L_F" template="sw5" architecture="arch_L_F"/>
+    <application name="sw5_L_M" template="sw5" architecture="arch_L_M"/>
+</tuning_knob_search_set>

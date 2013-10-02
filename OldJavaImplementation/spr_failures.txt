@@ -1,0 +1,46 @@
+
+For anything that throws an exception, it is collected.  This includes bugs and error conditions I've been too lazy to clean up properly.
+
+1)
+Too many state elements (arrays or streams)
+Message: Insufficient <node type>: required-<x> capacity-<y>
+Collected: not by default
+Factor: required/capacity
+
+2)
+Required II exceeds max
+Message: ERROR: Required II for mapping exceeds maxII of x (Current II y)
+Collected: Don't think so
+Factor: required/max
+
+3)
+Scheduler failed to find a valid schedule within resource limitations
+Message: Scheduling failed
+Collected: probably, but will show up as RouterResult.NO_ROUTE
+Factor: ???
+
+4)
+Placement Failure - probably from too small of an architecture, but the scheduler would likely fail first, unless scheduling is not run
+Message: Could not complete initial placement: node "+dataflowNode+" unplaced.
+Collected: probably, but will show up as RouterResult.NO_ROUTE
+Factor: ???
+
+5)
+Routing Failure (if continue on congestion is specified, message will be output, and SPR will retry with higher II)
+Message: "Router Failure - Congested nodes:"
+ <List of congested nodes>
+Collected: yes : RouterResult.CONGESTION
+Factor: 
+
+6)
+Run out of SPR iterations (if continue on congestion is specified)
+Message: lots of either "Router Failure - Congested nodes:" or "Total number of connections requiring padding: <non-zero number>" right before "Best cost = <large number>, <the same non-zero number>"
+Collected: yes : RouterResult.CONGESTION or RouterResult.NO_ROUTE, depending on whether the last iteration was a router failure or a placer failure
+
+7)
+Exceeded allotted SPR run time
+Message: Exceeded maximum compile time!
+Collected:  not by default
+
+
+
